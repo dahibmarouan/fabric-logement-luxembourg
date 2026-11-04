@@ -138,7 +138,6 @@ erDiagram
 - [ ] **Automatisation** : pipeline Fabric planifié (téléchargement → notebook → procédures → actualisation du modèle), avec alerte en cas d'échec
 - [ ] **Prix moyen pondéré** par le nombre de ventes (`SUMX`)
 - [ ] **Harmonisation des communes fusionnées** (table de correspondance)
-- [ ] **Accessibilité et crédit immobilier** : intégration des taux d'intérêt de la BCL (mensualité théorique, sensibilité aux taux)
 - [ ] **Sécurité au niveau des lignes** (RLS) et **pipeline de déploiement**
 
 ---
