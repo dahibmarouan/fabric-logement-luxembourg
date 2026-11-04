@@ -1,0 +1,34 @@
+table dim_commune
+	lineageTag: c0432396-c69c-4df0-bed2-9b3eb4dfa382
+	sourceLineageTag: [gold].[dim_commune]
+
+	column commune_id
+		dataType: int64
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: 4841707a-302a-4562-900f-08b3919a5a06
+		sourceLineageTag: commune_id
+		summarizeBy: none
+		sourceColumn: commune_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column commune
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: 95b8f9e2-386e-4166-828a-72555f50380c
+		sourceLineageTag: commune
+		summarizeBy: none
+		sourceColumn: commune
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_commune = entity
+		mode: directLake
+		source
+			entityName: dim_commune
+			schemaName: gold
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+

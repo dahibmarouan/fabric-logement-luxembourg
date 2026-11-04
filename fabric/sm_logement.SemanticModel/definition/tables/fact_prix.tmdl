@@ -1,0 +1,134 @@
+table fact_prix
+	lineageTag: 31f58ff3-bdef-4174-94c5-9ce076afcfc5
+	sourceLineageTag: [gold].[fact_prix]
+
+	measure 'Ventes totales' = SUM(fact_prix[nb_ventes])
+		formatString: #,0
+		lineageTag: de435a2c-9e45-4a51-a417-5510d87a0b1b
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Prix moyen m²' = AVERAGE((fact_prix[prix_m2_affine]))
+		formatString: "€"\ #,0;-"€"\ #,0;"€"\ #,0
+		lineageTag: bf6eeb06-45f2-4d78-b6c6-3c81b8bb0ee0
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+	measure 'Part prix masqué' = DIVIDE(SUM(fact_prix[est_masque]),COUNTROWS(fact_prix))
+		formatString: 0.0%
+		lineageTag: 60c8d5c7-7995-49ad-868c-9061c989b5aa
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	column commune_id
+		dataType: int64
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: f71f9668-00ac-4adb-950a-cede3b30bf7f
+		sourceLineageTag: commune_id
+		summarizeBy: none
+		sourceColumn: commune_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column annee
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 8618a755-c788-436b-aeec-3e3de0c077f6
+		sourceLineageTag: annee
+		summarizeBy: none
+		sourceColumn: annee
+
+		annotation SummarizationSetBy = Automatic
+
+	column type_bien
+		dataType: string
+		sourceProviderType: varchar(8)
+		lineageTag: 0f8bf9a3-f80e-49e5-b5aa-554b970ad8a8
+		sourceLineageTag: type_bien
+		summarizeBy: none
+		sourceColumn: type_bien
+
+		annotation SummarizationSetBy = Automatic
+
+	column nb_ventes
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 391eafe8-3bdc-4e0f-ab27-56db5f76e5dd
+		sourceLineageTag: nb_ventes
+		summarizeBy: sum
+		sourceColumn: nb_ventes
+
+		annotation SummarizationSetBy = Automatic
+
+	column prix_m2_affine
+		dataType: decimal
+		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
+		sourceProviderType: decimal(10, 3)
+		lineageTag: 47adf49a-4b12-4c84-aa83-40f6dfdcc74d
+		sourceLineageTag: prix_m2_affine
+		summarizeBy: none
+		sourceColumn: prix_m2_affine
+
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	column fourchette_min
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: a95b3ecf-0dd1-4653-88dd-d55a987d322f
+		sourceLineageTag: fourchette_min
+		summarizeBy: none
+		sourceColumn: fourchette_min
+
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
+
+	column fourchette_max
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 6691d0a9-0863-4b9a-bff5-b0793e0f112a
+		sourceLineageTag: fourchette_max
+		summarizeBy: none
+		sourceColumn: fourchette_max
+
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
+
+	column est_masque
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: f3f74194-9e0a-4076-91da-a3c405d93c39
+		sourceLineageTag: est_masque
+		summarizeBy: sum
+		sourceColumn: est_masque
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_prix = entity
+		mode: directLake
+		source
+			entityName: fact_prix
+			schemaName: gold
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+

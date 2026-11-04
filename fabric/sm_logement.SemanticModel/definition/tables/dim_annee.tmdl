@@ -1,0 +1,34 @@
+table dim_annee
+	lineageTag: 81f87313-1fd8-4064-b546-0bca5af37662
+	sourceLineageTag: [gold].[dim_annee]
+
+	column annee
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 778a0b2c-fb30-4635-85f2-af68723021db
+		sourceLineageTag: annee
+		summarizeBy: none
+		sourceColumn: annee
+
+		annotation SummarizationSetBy = Automatic
+
+	column periode
+		dataType: string
+		sourceProviderType: varchar(15)
+		lineageTag: 8b3203b1-a858-47e7-a004-ba9650f4208d
+		sourceLineageTag: periode
+		summarizeBy: none
+		sourceColumn: periode
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_annee = entity
+		mode: directLake
+		source
+			entityName: dim_annee
+			schemaName: gold
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+

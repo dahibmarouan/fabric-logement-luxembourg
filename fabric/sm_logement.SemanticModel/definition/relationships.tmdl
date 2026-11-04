@@ -1,0 +1,8 @@
+relationship dd925048-ac19-2598-b93b-5f12bc323379
+	fromColumn: fact_prix.commune_id
+	toColumn: dim_commune.commune_id
+
+relationship e656d04d-d091-2081-4138-925f57d1bc00
+	fromColumn: fact_prix.annee
+	toColumn: dim_annee.annee
+
