@@ -23,7 +23,7 @@ Projet d'analytics engineering de bout en bout dans **Microsoft Fabric** : des f
 
 ```mermaid
 flowchart LR
-    A[data.public.lu<br/>10 fichiers .xls<br/>2016-2025] --> B[Notebook<br/>nb_ingestion_bronze]
+    A[data.public.lu<br/>10 fichiers .xls<br/>2016-2025] --> B[Notebook<br/>nb_ingestion_bronze<br/>téléchargement + chargement]
     B --> C[(Lakehouse<br/>lh_bronze<br/>raw_prix_commune)]
     C --> D[Procédure T-SQL<br/>silver.sp_charger_silver]
     D --> E[(Warehouse<br/>silver.prix_commune_annuel)]
@@ -90,7 +90,24 @@ erDiagram
 | **Passage au format long avec `UNION ALL`** | Le fichier source sépare existant et VEFA en colonnes. Une colonne constante `type_bien` transforme cette position en donnée filtrable. `UNION ALL` plutôt que `UNION`, pour ne jamais masquer un doublon de la source. |
 | **Découpage robuste de la fourchette de prix** | `2458 € - 4001 €` est découpé à partir de la position du tiret (`CHARINDEX`), et non à longueur fixe, pour gérer les prix à 5 chiffres. |
 | **Procédures stockées idempotentes** | Chaque procédure fait `DROP TABLE IF EXISTS` puis `CREATE TABLE ... AS SELECT` : la relancer reconstruit les tables sans créer de doublons. |
-| **Contrôles de cohérence** | Nombre de lignes vérifié à chaque étape (1 020 par type de bien, 2 040 au total) et totaux comparés aux lignes « Total des transactions » de la source. |
+| **Contrôles de cohérence** | Nombre de lignes vérifié à chaque étape (1 020 par type de bien, 2 040 au total) et totaux vérifiés sur 2016. |
+
+---
+
+## 🔄 Automatisation
+
+Un pipeline Fabric (`pl_logement`) reconstruit toute la chaîne, du téléchargement jusqu'au rapport :
+
+1. **Notebook** `nb_ingestion_bronze` : télécharge les fichiers annuels depuis l'API de data.public.lu et les charge dans le bronze (relancer ne crée pas de doublons)
+2. **Procédure** `silver.sp_charger_silver`
+3. **Procédure** `gold.sp_charger_gold`
+4. **Attente d'une minute** : la table de faits recréée mettait quelques secondes à être visible dans OneLake, ce qui faisait échouer l'actualisation du modèle en mode Direct Lake
+5. **Actualisation** du modèle sémantique `sm_logement`
+
+- **Planification** : le 1er de chaque mois à 06:00 (heure de Paris).
+- **Contrôle de la source** : le notebook échoue si moins de 10 années sont trouvées, ce qui stoppe la chaîne avant toute modification des tables.
+- **Bibliothèques** : `xlrd` est installé dans un environnement Fabric (`env_logement`), car `%pip` est désactivé dans les exécutions de pipeline.
+- **Suivi** : chaque exécution est tracée dans le hub de surveillance de Fabric. L'alerte par e-mail n'est pas activée : le locataire d'essai n'a pas de boîte mail.
 
 ---
 
@@ -107,9 +124,11 @@ erDiagram
 
 ```
 ├── README.md
-├── docs/
-│   └── rapport.png                     # capture du rapport
+├── rapport.png                         # capture du rapport
+│                  
 └── fabric/                             # synchronisé automatiquement par l'intégration Git de Fabric
+    ├── pl_logement.DataPipeline/       # pipeline planifié
+    ├── env_logement.Environment/       # bibliothèques Spark (xlrd)
     ├── lh_bronze.Lakehouse/
     ├── nb_ingestion_bronze.Notebook/   # ingestion des fichiers .xls
     ├── wh_logement.Warehouse/          # tables et procédures silver / gold
@@ -121,21 +140,17 @@ erDiagram
 
 ## ▶️ Reproduire le projet
 
-1. Créer un espace de travail Fabric et le relier à ce dépôt (**Paramètres de l'espace de travail → Intégration Git**, dossier `fabric`).
-2. Télécharger les fichiers annuels 2016-2025 du jeu de données [*Prix de vente des appartements — prix affinés par commune*](https://data.public.lu/fr/datasets/prix-de-vente-des-appartements-prix-affines-hors-annexes-par-commune/) et les déposer dans `lh_bronze` → `Files/prix_commune/`, nommés `prix_affine_commune_AAAA.xls`.
-3. Exécuter le notebook `nb_ingestion_bronze`.
-4. Dans `wh_logement`, exécuter :
-   ```sql
-   EXEC silver.sp_charger_silver;
-   EXEC gold.sp_charger_gold;
-   ```
-5. Actualiser le modèle sémantique `sm_logement` et ouvrir le rapport `rp_logement`.
+1. Créer un espace de travail Fabric (capacité d'essai ou payante) et le relier à ce dépôt (**Paramètres de l'espace de travail → Intégration Git**, branche `main`, dossier `fabric`).
+2. Définir `env_logement` comme environnement par défaut (**Paramètres de l'espace de travail → Ingénierie des données / Science → Spark settings → Environnement**), pour que le notebook dispose de `xlrd`.
+3. Dans le pipeline `pl_logement`, vérifier la connexion de l'activité d'actualisation du modèle sémantique : les connexions ne suivent pas le code et sont à reconfigurer.
+4. Exécuter `pl_logement` : il télécharge les fichiers, construit silver et gold, puis actualise le modèle.
+5. Ouvrir le rapport `rp_logement`.
 
 ---
 
 ## 🔜 Prochaines étapes
 
-- [ ] **Automatisation** : pipeline Fabric planifié (téléchargement → notebook → procédures → actualisation du modèle), avec alerte en cas d'échec
+- [x] **Automatisation** : pipeline Fabric planifié (téléchargement → notebook → procédures → actualisation du modèle). Alertes hors limite du compte d'essai.
 - [ ] **Prix moyen pondéré** par le nombre de ventes (`SUMX`)
 - [ ] **Harmonisation des communes fusionnées** (table de correspondance)
 - [ ] **Sécurité au niveau des lignes** (RLS) et **pipeline de déploiement**
