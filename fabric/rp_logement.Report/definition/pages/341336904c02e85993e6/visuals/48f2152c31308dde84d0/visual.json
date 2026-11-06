@@ -27,8 +27,9 @@
                 }
               },
               "queryRef": "dim_annee.annee",
-              "nativeQueryRef": "annee",
-              "active": true
+              "nativeQueryRef": "année",
+              "active": true,
+              "displayName": "année"
             }
           ]
         },

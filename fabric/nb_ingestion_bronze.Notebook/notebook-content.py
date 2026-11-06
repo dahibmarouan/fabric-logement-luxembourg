@@ -22,7 +22,30 @@
 
 # CELL ********************
 
-%pip install xlrd
+import requests, re, os, datetime
+
+DATASET_API = "https://data.public.lu/api/1/datasets/57f268ff111e9b0c425f9bce/"
+DOSSIER = "/lakehouse/default/Files/prix_commune"
+ANNEE_MIN = 2016
+ANNEE_MAX = datetime.date.today().year - 1   # uniquement des années civiles complètes
+
+os.makedirs(DOSSIER, exist_ok=True)
+ressources = requests.get(DATASET_API, timeout=30).json()["resources"]
+
+telecharges = []
+for r in ressources:
+    m = re.search(r"par-commune-(\d{4})\.xls$", r["url"])
+    if not m:
+        continue   # ignore les fichiers trimestriels (ex. 2025t4) et les autres formats
+    annee = int(m.group(1))
+    if ANNEE_MIN <= annee <= ANNEE_MAX:
+        contenu = requests.get(r["url"], timeout=60).content
+        with open(f"{DOSSIER}/prix_affine_commune_{annee}.xls", "wb") as f:
+            f.write(contenu)
+        telecharges.append(annee)
+
+print(f"{len(telecharges)} fichiers téléchargés : {sorted(telecharges)}")
+assert len(telecharges) >= 10, "Moins de 10 années trouvées : vérifier la source"
 
 # METADATA ********************
 

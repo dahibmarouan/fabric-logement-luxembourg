@@ -27,9 +27,9 @@
                 }
               },
               "queryRef": "dim_annee.periode",
-              "nativeQueryRef": "Periode",
+              "nativeQueryRef": "Période",
               "active": true,
-              "displayName": "Periode"
+              "displayName": "Période"
             }
           ]
         }

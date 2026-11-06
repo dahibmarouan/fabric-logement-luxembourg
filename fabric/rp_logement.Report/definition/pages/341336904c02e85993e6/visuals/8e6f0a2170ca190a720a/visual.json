@@ -46,7 +46,8 @@
                 }
               },
               "queryRef": "fact_prix.type_bien",
-              "nativeQueryRef": "Nombre de type_bien"
+              "nativeQueryRef": "Type de bien",
+              "displayName": "Type de bien"
             }
           ]
         },

@@ -1,0 +1,174 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "923d65d9-7de3-abae-4e36-a8a2dfac3e58",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "ingestion_bronze",
+        "dependsOn": []
+      },
+      {
+        "type": "SqlServerStoredProcedure",
+        "typeProperties": {
+          "storedProcedureName": "silver.sp_charger_silver"
+        },
+        "linkedService": {
+          "name": "wh_logement",
+          "properties": {
+            "type": "DataWarehouse",
+            "typeProperties": {
+              "artifactId": "ff75899d-3d8c-91ee-42fa-56069dabfbe9",
+              "endpoint": "yckxt537en4ejcyhgrnqskwx3a-6urthoebngwepd5e3rhbacsoaa.datawarehouse.fabric.microsoft.com",
+              "workspaceId": "00000000-0000-0000-0000-000000000000"
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Procedure stockee silver",
+        "dependsOn": [
+          {
+            "activity": "ingestion_bronze",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SqlServerStoredProcedure",
+        "typeProperties": {
+          "storedProcedureName": "gold.sp_charger_gold"
+        },
+        "linkedService": {
+          "name": "wh_logement",
+          "properties": {
+            "type": "DataWarehouse",
+            "typeProperties": {
+              "artifactId": "ff75899d-3d8c-91ee-42fa-56069dabfbe9",
+              "endpoint": "yckxt537en4ejcyhgrnqskwx3a-6urthoebngwepd5e3rhbacsoaa.datawarehouse.fabric.microsoft.com",
+              "workspaceId": "00000000-0000-0000-0000-000000000000"
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "procedure stockee gold",
+        "dependsOn": [
+          {
+            "activity": "Procedure stockee silver",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "PBISemanticModelRefresh",
+        "typeProperties": {
+          "method": "POST",
+          "groupId": "b83323f5-6981-47ac-8fa4-dc4e100a4e00",
+          "datasetId": "c0e27745-b0c8-4b1c-b443-3f087bf3ddd5",
+          "commitMode": "Transactional",
+          "objects": [
+            {
+              "table": "dim_commune"
+            },
+            {
+              "table": "fact_prix"
+            },
+            {
+              "table": "dim_annee"
+            }
+          ],
+          "waitOnCompletion": true,
+          "operationType": "SemanticModelRefresh"
+        },
+        "externalReferences": {
+          "connection": "22468488-0616-44c4-b2b8-9eb8aa25bb09"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "actualisation modele",
+        "dependsOn": [
+          {
+            "activity": "Wait1",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Wait",
+        "typeProperties": {
+          "waitTimeInSeconds": 60
+        },
+        "name": "Wait1",
+        "dependsOn": [
+          {
+            "activity": "procedure stockee gold",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Office365Email",
+        "typeProperties": {
+          "body": "<p>@{pipeline().Pipeline}@{utcNow()}</p>",
+          "to": "contact.marouan.pro@gmail.com",
+          "subject": "Échec du pipeline pl_logement"
+        },
+        "externalReferences": {
+          "connection": "502539f7-9e8a-4945-a4eb-4402b643193d"
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Office365Email1",
+        "dependsOn": [
+          {
+            "activity": "actualisation modele",
+            "dependencyConditions": [
+              "Failed",
+              "Skipped"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
